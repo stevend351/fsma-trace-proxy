@@ -130,10 +130,10 @@ app.post('/api/pull-event', async (req, res) => {
       qty_original: Number(b.qty_original),
       qty_remaining_after: Number(b.qty_remaining_after),
       unit: String(b.unit),
-      from_location: String(b.from_location),
+      from_location_txt: String(b.from_location),
       also_staged: !!b.also_staged,
       timestamp: b.timestamp || nowIso(),
-      user: String(b.user),
+      user_txt: String(b.user),
     };
     if (b.device_id) fields.device_id = String(b.device_id);
     if (b.notes) fields.notes = String(b.notes);
@@ -153,12 +153,12 @@ app.post('/api/pull-event', async (req, res) => {
         sku: fields.sku,
         qty: fields.qty_pulled,
         unit: fields.unit,
-        from_location: fields.from_location,
-        to_location: 'Main Kitchen',
-        origin: 'pull-inline',
+        from_location_txt: fields.from_location_txt,
+        to_location_txt: 'Main Kitchen',
+        origin_txt: 'pull-inline',
         linked_pull_event: [created.id],
         timestamp: fields.timestamp,
-        user: fields.user,
+        user_txt: fields.user_txt,
       };
       if (b.device_id) stageFields.device_id = fields.device_id;
       stageRec = await airtableFetch(`/${TBL_STAGE_EVENTS}`, {
@@ -204,11 +204,11 @@ app.post('/api/stage-event', async (req, res) => {
       sku: String(b.sku),
       qty: Number(b.qty),
       unit: String(b.unit),
-      from_location: String(b.from_location),
-      to_location: String(b.to_location || 'Main Kitchen'),
-      origin: 'stage-flow',
+      from_location_txt: String(b.from_location),
+      to_location_txt: String(b.to_location || 'Main Kitchen'),
+      origin_txt: 'stage-flow',
       timestamp: b.timestamp || nowIso(),
-      user: String(b.user),
+      user_txt: String(b.user),
     };
     if (b.device_id) fields.device_id = String(b.device_id);
     if (b.notes) fields.notes = String(b.notes);
