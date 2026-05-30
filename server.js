@@ -51,7 +51,13 @@ async function airtableFetch(path, opts = {}) {
 
 // Find or create a Production row for a given production_date (ISO YYYY-MM-DD).
 // Returns the Airtable record id.
+function _safeOpenedBy(v) {
+  const allowed = ['Brenda','Steve','Other'];
+  return allowed.includes(v) ? v : 'Other';
+}
+
 async function getOrCreateProduction(productionDate, openedBy = 'Other') {
+  openedBy = _safeOpenedBy(openedBy);
   // 1. Try to find existing
   const filter = encodeURIComponent(`{production_date}='${productionDate}'`);
   const found = await airtableFetch(
@@ -129,7 +135,7 @@ app.post('/api/pull-event', async (req, res) => {
       qty_pulled: Number(b.qty_pulled),
       qty_original: Number(b.qty_original),
       qty_remaining_after: Number(b.qty_remaining_after),
-      unit: String(b.unit),
+      unit_txt: String(b.unit),
       from_location_txt: String(b.from_location),
       also_staged: !!b.also_staged,
       timestamp: b.timestamp || nowIso(),
@@ -152,7 +158,7 @@ app.post('/api/pull-event', async (req, res) => {
         production_date: [prodId],
         sku: fields.sku,
         qty: fields.qty_pulled,
-        unit: fields.unit,
+        unit_txt: fields.unit_txt,
         from_location_txt: fields.from_location_txt,
         to_location_txt: 'Main Kitchen',
         origin_txt: 'pull-inline',
@@ -203,7 +209,7 @@ app.post('/api/stage-event', async (req, res) => {
       production_date: [prodId],
       sku: String(b.sku),
       qty: Number(b.qty),
-      unit: String(b.unit),
+      unit_txt: String(b.unit),
       from_location_txt: String(b.from_location),
       to_location_txt: String(b.to_location || 'Main Kitchen'),
       origin_txt: String(b.origin || 'stage-flow'),
