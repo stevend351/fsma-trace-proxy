@@ -261,6 +261,54 @@ app.post('/api/cost-snapshot/:range', (req, res) => {
   }
 });
 
+// POST /api/qb-debug/:label
+// Temporary: dumps raw request body to /tmp/qb-debug-{label}.json for inspection.
+// Used to capture actual Make.com QB MakeApiCall response shape so we can design
+// the cost-per-bar parser correctly. Token-gated. Remove after cost endpoint shipped.
+app.post('/api/qb-debug/:label', (req, res) => {
+  if (!COST_WRITE_TOKEN) return res.status(500).json({ error: 'COST_WRITE_TOKEN not configured' });
+  const provided = req.get('X-Cost-Write-Token') || '';
+  if (provided !== COST_WRITE_TOKEN) return res.status(401).json({ error: 'invalid write token' });
+  const label = String(req.params.label).replace(/[^a-z0-9_-]/gi, '').slice(0, 32);
+  if (!label) return badRequest(res, 'invalid label');
+  const body = req.body;
+  const filePath = `${SNAPSHOT_DIR}/qb-debug-${label}.json`;
+  const dump = {
+    label,
+    captured_at: nowIso(),
+    content_type: req.get('content-type') || null,
+    body_type: typeof body,
+    is_array: Array.isArray(body),
+    body_preview_keys: (body && typeof body === 'object' && !Array.isArray(body)) ? Object.keys(body).slice(0, 50) : null,
+    body,
+  };
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(dump, null, 2));
+    console.log(`[qb-debug] wrote ${filePath} (type=${typeof body}, is_array=${Array.isArray(body)})`);
+    res.json({ ok: true, label, path: filePath, body_type: typeof body });
+  } catch (e) {
+    console.error('qb-debug write error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/qb-debug/:label
+// Reads back a captured debug dump. Token-gated.
+app.get('/api/qb-debug/:label', (req, res) => {
+  if (!COST_WRITE_TOKEN) return res.status(500).json({ error: 'COST_WRITE_TOKEN not configured' });
+  const provided = req.get('X-Cost-Write-Token') || '';
+  if (provided !== COST_WRITE_TOKEN) return res.status(401).json({ error: 'invalid write token' });
+  const label = String(req.params.label).replace(/[^a-z0-9_-]/gi, '').slice(0, 32);
+  const filePath = `${SNAPSHOT_DIR}/qb-debug-${label}.json`;
+  try {
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'not found', path: filePath });
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // POST /api/pull-event
 // Body: {
 //   production_date: "YYYY-MM-DD",
