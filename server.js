@@ -206,7 +206,7 @@ app.post('/api/stage-event', async (req, res) => {
       unit: String(b.unit),
       from_location_txt: String(b.from_location),
       to_location_txt: String(b.to_location || 'Main Kitchen'),
-      origin_txt: 'stage-flow',
+      origin_txt: String(b.origin || 'stage-flow'),
       timestamp: b.timestamp || nowIso(),
       user_txt: String(b.user),
     };
